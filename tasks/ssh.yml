@@ -27,6 +27,6 @@
 
 - name:
   known_hosts:
-    key:  "{{ kdump_ssh_server_location }} {{ serverpubkey.content | b64decode }}"
+    key: "{{ kdump_ssh_server_location }} {{ serverpubkey.content | b64decode }}"
     name: "{{ kdump_ssh_server_location }}"
     path: /etc/ssh/ssh_known_hosts
