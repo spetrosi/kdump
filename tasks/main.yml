@@ -4,10 +4,22 @@
     name: kexec-tools
     state: present
 
-- name: Find out reserved memory for the crash kernel
-  slurp:
-    src: /sys/kernel/kexec_crash_size
-  register: kexec_crash_size
+# Must reboot to reserve memory for kdump in `/sys/kernel/kexec_crash_size`
+- name: Ensure that the kdump service is enabled
+  service:
+    name: kdump
+    enabled: true
+  register: __kdump_enable_service
+
+- name: Set the kdump_reboot_required fact
+  set_fact:
+    __kdump_reboot_required: true
+  when: __kdump_enable_service is changed
+
+#- name: Find out reserved memory for the crash kernel
+#  slurp:
+#    src: /sys/kernel/kexec_crash_size
+#  register: kexec_crash_size
 
 - include_tasks: ssh.yml
   when:
@@ -24,7 +36,7 @@
     dest: /etc/kdump.conf
     backup: yes
     mode: "{{ __kdump_conf.stat.mode | d('0644') }}"
-  when: kexec_crash_size.content|b64decode|int > 0
+  # when: kexec_crash_size.content|b64decode|int > 0
   notify: restart kdump
 
 - name: Get mode of /etc/sysconfig/kdump if it exists
@@ -38,5 +50,12 @@
     dest: /etc/sysconfig/kdump
     backup: yes
     mode: "{{ __sysconfig_kdump.stat.mode | d('0644') }}"
-  when: kexec_crash_size.content|b64decode|int > 0
+  # when: kexec_crash_size.content|b64decode|int > 0
   notify: restart kdump
+
+- name: Fail with the message that reboot is required
+  fail:
+    msg: "You must reboot the host to apply the settings"
+  when: __kdump_reboot_required | bool
+  register: __kdump_reboot_fail
+

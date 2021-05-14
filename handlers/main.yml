@@ -1,5 +1,17 @@
 ---
+- name: set reboot required
+  include_tasks: handlers/set_reboot_required.yml
+
+  #- name: set reboot required
+  #  set_fact:
+  #    kdump_reboot_required: true
+  #
+  #- name: fail reboot required
+  #  fail:
+  #    msg: "You must reboot the host to apply the settings"
+
 - name: restart kdump
   service:
     name: kdump
     state: restarted
+  when: __kdump_reboot_required is not defined

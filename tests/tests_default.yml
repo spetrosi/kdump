@@ -1,5 +1,22 @@
 - name: Ensure that the rule runs with default parameters
   hosts: all
+  tasks:
+    - name: Name
+      block:
+        - name: Run the role
+          include_role:
+            name: linux-system-roles.kdump
 
-  roles:
-    - linux-system-roles.kdump
+      rescue:
+        - name: Reboot if required
+          reboot:
+          when: __kdump_reboot_required | bool
+
+        - name: unset the kdump_reboot_required fact
+          set_fact:
+            __kdump_reboot_required: false
+          when: __kdump_reboot_required | bool
+
+        - name: Run the role again
+          include_role:
+            name: linux-system-roles.kdump
